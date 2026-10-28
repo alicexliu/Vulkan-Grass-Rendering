@@ -1,6 +1,10 @@
 #version 450
 #extension GL_ARB_separate_shader_objects : enable
 
+#define ENABLE_ORIENTATION_CULLING 1
+#define ENABLE_FRUSTUM_CULLING 1
+#define ENABLE_DISTANCE_CULLING 1
+
 #define WORKGROUP_SIZE 32
 layout(local_size_x = WORKGROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
@@ -125,13 +129,16 @@ void main() {
 	// You want to write the visible blades to the buffer without write conflicts between threads
 
   // orientation culling
+#if ENABLE_ORIENTATION_CULLING
   vec3 cameraPos = inverse(camera.view)[3].xyz;
   vec3 viewDir = normalize(cameraPos - v0);
   if (0.90 < abs(dot(t1, viewDir))) {
     return;
   }
+#endif
 
   // view_frustum culling
+#if ENABLE_FRUSTUM_CULLING
   float t = 0.2;
   mat4 viewProj = camera.proj * camera.view;
 
@@ -155,9 +162,10 @@ void main() {
       }
     }
   }
-
+#endif
 
   // distance culling
+#if ENABLE_DISTANCE_CULLING
   int n = 6;
   float d_max = 15.f;
   float d_proj = length(v0 - cameraPos - up * dot((v0 - cameraPos), up));
@@ -165,6 +173,7 @@ void main() {
   if (index % n > n * (2 - d_proj / d_max)) {
     return;
   }
+#endif
 
   culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blades[index];
 }
