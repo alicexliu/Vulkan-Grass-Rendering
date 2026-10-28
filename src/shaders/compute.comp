@@ -25,7 +25,7 @@ struct Blade {
 // 1. Store the input blades
 // 2. Write out the culled blades
 // 3. Write the total number of blades remaining
-layout(set = 2, binding = 0) readonly buffer Blades {
+layout(set = 2, binding = 0) buffer Blades {
     Blade blades[];
 };
 
@@ -55,12 +55,74 @@ void main() {
 	barrier(); // Wait till all threads reach this point
 
   // TODO: Apply forces on every blade and update the vertices in the buffer
+  uint index = gl_GlobalInvocationID.x;
+  if (index >= blades.length()) {
+      return;
+  }
+  Blade blade = blades[index];
+
+  vec3 v0 = blade.v0.xyz;
+  vec3 v1 = blade.v1.xyz;
+  vec3 v2 = blade.v2.xyz;
+  vec3 up = blade.up.xyz;
+
+  float orient = blade.v0.w;
+  float h = blade.v1.w;
+  float width = blade.v2.w;
+  float stiffness = blade.up.w;
+
+  vec3 t1 = vec3(sin(orient), 0.0, cos(orient));
+
+  // gravity
+  vec4 D = vec4(0.0, -1.0, 0.0, 9.8);
+  vec3 ge = normalize(D.xyz) * D.w;
+
+  vec3 f = normalize(cross(t1, up.xyz));
+  vec3 gf = 0.25 * length(ge) * f;
+
+  vec3 gravity = ge + gf;
+
+  // recovery
+  vec3 iv2 = v0 + up * h;
+  vec3 recovery = (iv2 - v2) * stiffness;
+
+  // wind
+  vec3 windDir = normalize(vec3(1.0, 0.0, 0.71));
+  float wave = sin((totalTime * 2.0 + v0.x * 0.5 + v0.z * 0.5) * 0.75) + cos((totalTime * 1.5 - v0.x * 0.25 + v0.z * 0.75) * 0.5);
+  vec3 w = windDir * 1.17 * wave;
+
+  float directionalAlignment = 1.0 - abs(dot(w / length(w), (v2 - v0) / length(v2 - v0)));
+  float heightRatio = dot(v2 - v0, up) / h;
+  float windAlignment = heightRatio * directionalAlignment;
+
+  vec3 wind = w * windAlignment;
+
+  // total force
+  vec3 totalForce = gravity + recovery + wind;
+
+  // apply force
+  v2 += totalForce * deltaTime;
+  v2 = v2 - up * min(dot(up, v2 - v0), 0.0);
+  float l_proj = length(v2 - v0 - up * (dot(v2 - v0, up)));
+  v1 = v0 + h * up * max(1.0 - l_proj / h, 0.05 * max(l_proj / h , 1.0));
+
+  float L0 = distance(v0, v2);
+  float L1 = distance(v0, v1) + distance(v1, v2);
+  float L  = (2.0 * L0 + L1) / 3.0;
+
+  float r = h / L;
+
+  vec3 v1_corr = v0 + r * (v1 - v0);
+  vec3 v2_corr = v1_corr + r * (v2 - v1);
+
+  blade.v1.xyz = v1_corr;
+  blade.v2.xyz = v2_corr;
+  blades[index] = blade;
 
 	// TODO: Cull blades that are too far away or not in the camera frustum and write them
 	// to the culled blades buffer
 	// Note: to do this, you will need to use an atomic operation to read and update numBlades.vertexCount
 	// You want to write the visible blades to the buffer without write conflicts between threads
   
-  uint index = gl_GlobalInvocationID.x;
   culledBlades[atomicAdd(numBlades.vertexCount, 1)] = blades[index];
 }

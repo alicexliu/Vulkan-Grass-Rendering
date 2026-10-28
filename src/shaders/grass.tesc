@@ -36,7 +36,7 @@ void main() {
   gl_TessLevelOuter[3] = 8.0;
 
   // height
-  gl_TessLevelInner[1] = 8.0;
-  gl_TessLevelOuter[0] = 8.0;
-  gl_TessLevelOuter[2] = 8.0;
+  gl_TessLevelInner[1] = 10.0;
+  gl_TessLevelOuter[0] = 10.0;
+  gl_TessLevelOuter[2] = 10.0;
 }
