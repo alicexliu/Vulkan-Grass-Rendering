@@ -139,22 +139,23 @@ void main() {
   vec4 p = viewProj * vec4(v0, 1.0);
   float hc = p.w + t;
 
-  if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= hc && p.z >= -hc))) {
+  if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= p.w && p.z >= 0.0))) {
     // v2 
     p = viewProj * vec4(v2, 1.0);
     hc = p.w + t;
 
-    if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= hc && p.z >= -hc))) {
+    if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= p.w && p.z >= 0.0))) {
       // m
       vec3 m = 0.25 * v0 + 0.5 * v1 + 0.25 * v2;
       p = viewProj * vec4(m, 1.0);
       hc = p.w + t;
 
-      if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= hc && p.z >= -hc))) {
+      if (!((p.x <= hc && p.x >= -hc) && (p.y <= hc && p.y >= -hc) && (p.z <= p.w && p.z >= 0.0))) {
         return;
       }
     }
   }
+
 
   // distance culling
   int n = 6;
