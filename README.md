@@ -66,6 +66,8 @@ The third is view-frustum culling, where we cull blades of grass that are not wi
 
 ## Performance Analysis
 
+All runtime ms were taken from the average of 1000 frames.
+
 ### Number of Grass Blades
 
 <p align="center">
